@@ -132,17 +132,18 @@ def draw_glow_button(img, x, y, w, h, icon_name, label, accent,
                      active=False, proximity=0.0):
     """
     Glassmorphism button with icon + label.
+    Blends only the button region — never copies the full frame.
     active    → left accent strip + tinted background
     proximity → 0‥1 brightness lift as finger approaches
     """
     boost = int(proximity * 55)
 
-    # Semi-transparent background
+    # Blend background over the button region only
     bg = (tuple(min(255, c // 3 + 35 + boost) for c in accent)
           if active else (22 + boost, 14 + boost, 48 + boost))
-    overlay = img.copy()
-    cv2.rectangle(overlay, (x, y), (x + w, y + h), bg, -1)
-    cv2.addWeighted(overlay, 0.82, img, 0.18, 0, img)
+    roi = img[y:y + h, x:x + w]
+    layer = np.full_like(roi, bg, dtype=np.uint8)
+    cv2.addWeighted(layer, 0.82, roi, 0.18, 0, roi)
 
     # Border
     bdr = (tuple(min(255, c // 2 + 80 + boost) for c in accent)
@@ -168,10 +169,10 @@ def draw_glow_button(img, x, y, w, h, icon_name, label, accent,
 # ── Panel background ───────────────────────────────────────────────────────────
 
 def draw_panel(img, x, y, w, h):
-    """Deep glassmorphism panel with inner highlight edges."""
-    overlay = img.copy()
-    cv2.rectangle(overlay, (x, y), (x + w, y + h), PANEL_BG, -1)
-    cv2.addWeighted(overlay, 0.78, img, 0.22, 0, img)
+    """Deep glassmorphism panel — blends only the panel region (not full frame)."""
+    roi = img[y:y + h, x:x + w]
+    dark = np.full_like(roi, PANEL_BG, dtype=np.uint8)
+    cv2.addWeighted(dark, 0.78, roi, 0.22, 0, roi)
     cv2.rectangle(img, (x, y), (x + w, y + h), PANEL_BDR, 1)
     cv2.line(img, (x + 1, y + 1), (x + w - 2, y + 1), PANEL_HL, 1)
     cv2.line(img, (x + 1, y + 1), (x + 1, y + h - 2), PANEL_HL, 1)
@@ -256,13 +257,11 @@ def render_header(img, W, HDR_H, COLORS, draw_color, fps, bg_mode):
         brightness = int(180 + 75 * math.sin(t * 4 + i))
         cv2.circle(hdr, (px, py), 1, (brightness, brightness, brightness), -1)
 
-    # ── Bottom accent line ────────────────────────────────────────────────
-    for x in range(0, W, 1):
-        ratio = x / W
-        r = int(80  * (1 - ratio) + 200 * ratio)
-        g = int(40  * (1 - ratio) +  60 * ratio)
-        b = int(160 * (1 - ratio) + 255 * ratio)
-        hdr[HDR_H - 2, x] = (b, g, r)
+    # ── Bottom accent line (vectorised) ──────────────────────────────────
+    t = np.linspace(0.0, 1.0, W, dtype=np.float32)
+    hdr[HDR_H - 2, :, 0] = (160 * (1 - t) + 255 * t).astype(np.uint8)  # B
+    hdr[HDR_H - 2, :, 1] = ( 40 * (1 - t) +  60 * t).astype(np.uint8)  # G
+    hdr[HDR_H - 2, :, 2] = ( 80 * (1 - t) + 200 * t).astype(np.uint8)  # R
     cv2.line(hdr, (0, HDR_H - 1), (W, HDR_H - 1), (40, 20, 80), 1)
 
     img[0:HDR_H, 0:W] = hdr
@@ -360,10 +359,11 @@ def render_status_bar(img, W, H,
     bar_y = H - 30
     bar   = create_gradient(W, 30, (14, 8, 38), (8, 4, 25), "horizontal")
 
-    # Top separator line
-    for x in range(W):
-        r = x / W
-        bar[0, x] = (int(118*(1-r)+80*r), int(70*(1-r)+40*r), int(195*(1-r)+140*r))
+    # Top separator line (vectorised)
+    t = np.linspace(0.0, 1.0, W, dtype=np.float32)
+    bar[0, :, 0] = (118 * (1 - t) +  80 * t).astype(np.uint8)
+    bar[0, :, 1] = ( 70 * (1 - t) +  40 * t).astype(np.uint8)
+    bar[0, :, 2] = (195 * (1 - t) + 140 * t).astype(np.uint8)
 
     # Status text
     if shape_mode and selected_shape:
@@ -403,9 +403,13 @@ def render_status_bar(img, W, H,
 # ── Internal helpers ───────────────────────────────────────────────────────────
 
 def _draw_sep(img, px, pw, y):
-    """Thin horizontal separator inside a panel."""
-    for x in range(px + 6, px + pw - 6):
-        r = (x - px) / pw
-        col = tuple(int(PANEL_BDR[i] * (1 - r) + PANEL_HL[i] * r) for i in range(3))
-        if 0 <= y < img.shape[0] and 0 <= x < img.shape[1]:
-            img[y, x] = col
+    """Thin horizontal separator — vectorised gradient line."""
+    if y < 0 or y >= img.shape[0]:
+        return
+    x0 = max(0, px + 6)
+    x1 = min(img.shape[1], px + pw - 6)
+    if x0 >= x1:
+        return
+    t = np.linspace(0.0, 1.0, x1 - x0, dtype=np.float32)
+    for i in range(3):
+        img[y, x0:x1, i] = (PANEL_BDR[i] * (1 - t) + PANEL_HL[i] * t).astype(np.uint8)

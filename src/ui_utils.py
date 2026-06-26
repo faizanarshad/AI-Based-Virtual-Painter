@@ -11,17 +11,17 @@ import numpy as np
 # ── Backgrounds ───────────────────────────────────────────────────────────────
 
 def create_gradient(width, height, color1, color2, direction="horizontal"):
-    """Return an (H, W, 3) uint8 gradient array."""
-    bg = np.zeros((height, width, 3), dtype=np.uint8)
+    """Return an (H, W, 3) uint8 gradient array — fully vectorised."""
+    bg = np.empty((height, width, 3), dtype=np.float32)
     if direction == "horizontal":
-        for x in range(width):
-            r = x / width
-            bg[:, x] = [int(color1[i] * (1 - r) + color2[i] * r) for i in range(3)]
+        t = np.linspace(0.0, 1.0, width, dtype=np.float32)  # (W,)
+        for i in range(3):
+            bg[:, :, i] = color1[i] * (1.0 - t) + color2[i] * t
     else:
-        for y in range(height):
-            r = y / height
-            bg[y, :] = [int(color1[i] * (1 - r) + color2[i] * r) for i in range(3)]
-    return bg
+        t = np.linspace(0.0, 1.0, height, dtype=np.float32).reshape(-1, 1)  # (H,1)
+        for i in range(3):
+            bg[:, :, i] = color1[i] * (1.0 - t) + color2[i] * t
+    return bg.astype(np.uint8)
 
 
 def create_grid(width, height, cell=40,
