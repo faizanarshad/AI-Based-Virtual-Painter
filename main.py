@@ -18,6 +18,7 @@ Keyboard shortcuts:
 import argparse
 import math
 import os
+import threading
 import time
 from collections import deque
 
@@ -72,7 +73,7 @@ COLORS = [
 
 # ── Canvas dimensions ─────────────────────────────────────────────────────────
 W, H     = 1280, 720
-HDR_H    = 110          # header height
+HDR_H    = 116          # header height (2 swatch rows + padding)
 
 # Colour swatches  (2 rows × 10, left portion of header)
 CLR_SZ   = 49           # swatch square size
@@ -188,18 +189,25 @@ def run(demo_mode=False):
     detector       = HandDetector(detectionCon=0.85)
     shape_detector = ShapeDetector()
 
-    # Voice
-    voice         = None
-    last_voice_t  = 0.0
-    VOICE_COOL    = 2.0
-    if VOICE_AVAILABLE:
-        from src.voice_controller import VoiceController
+    # Voice — initialise in a background thread so the window opens immediately
+    voice        = None
+    last_voice_t = 0.0
+    VOICE_COOL   = 2.0
+
+    def _init_voice():
+        nonlocal voice
+        if not VOICE_AVAILABLE:
+            return
         try:
-            voice = VoiceController()
-            voice.start_listening()
+            from src.voice_controller import VoiceController
+            vc = VoiceController()
+            vc.start_listening()
+            voice = vc
             print("[Voice] Active")
         except Exception as e:
             print(f"[Voice] Unavailable: {e}")
+
+    threading.Thread(target=_init_voice, daemon=True).start()
 
     # ── State ──────────────────────────────────────────────────────────────
     canvas       = np.zeros((H, W, 3), np.uint8)

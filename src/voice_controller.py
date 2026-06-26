@@ -13,10 +13,10 @@ class VoiceController:
     def __init__(self):
         if not AVAILABLE:
             raise RuntimeError("SpeechRecognition / PyAudio not installed")
-        self.recognizer = sr.Recognizer()
-        self.microphone = sr.Microphone()
+        self.recognizer    = sr.Recognizer()
         self.command_queue = _queue.Queue()
-        self.is_listening = False
+        self.is_listening  = False
+        # Microphone is created inside the thread to avoid blocking the main thread
 
     def start_listening(self):
         self.is_listening = True
@@ -26,11 +26,16 @@ class VoiceController:
         self.is_listening = False
 
     def _listen_loop(self):
-        with self.microphone as source:
-            self.recognizer.adjust_for_ambient_noise(source, duration=2)
+        try:
+            mic = sr.Microphone()
+            with mic as source:
+                self.recognizer.adjust_for_ambient_noise(source, duration=2)
+        except Exception as e:
+            print(f"[Voice] mic init failed: {e}")
+            return
         while self.is_listening:
             try:
-                with self.microphone as source:
+                with mic as source:
                     audio = self.recognizer.listen(source, timeout=1, phrase_time_limit=2)
                 command = self.recognizer.recognize_google(audio).lower()
                 self.command_queue.put(command)
