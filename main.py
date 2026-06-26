@@ -319,8 +319,8 @@ def run(demo_mode=False):
 
                 fingers = detector.fingersUp()
 
-                # ── AI snap: index + middle + ring (not pinky) ─────────
-                if fingers[1] and fingers[2] and fingers[3] and not fingers[4]:
+                # ── AI snap: index + middle + ring (pinky may be up too) ──
+                if fingers[1] and fingers[2] and fingers[3]:
                     xp, yp = 0, 0
                     if ai_active and len(ai_points) > 4:
                         kind = shape_detector.detect(ai_points)
@@ -332,7 +332,7 @@ def run(demo_mode=False):
                     ai_points.clear()
                     ai_active = False
 
-                # ── Selection: index + middle (ring down) ──────────────
+                # ── Selection: index + middle, ring must be down ───────
                 elif fingers[1] and fingers[2] and not fingers[3]:
                     xp, yp = 0, 0
                     shape_start = None

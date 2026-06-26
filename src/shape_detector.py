@@ -1,64 +1,98 @@
+"""
+AI shape detector — converts freehand strokes into clean geometric shapes.
+
+Detection strategy (data-driven):
+  At tight epsilon, a freehand circle hull → 6-8 vertices
+  A freehand rectangle hull              → 4 vertices
+  A freehand triangle hull               → 3 vertices
+
+  So: run approxPolyDP at tight epsilon first.
+  • 3 verts → triangle
+  • 4 verts → rectangle
+  • 5+ verts → fallback min-enclosing-circle test → circle or None
+"""
+
 import math
 import cv2
+import numpy as np
 
 
 class ShapeDetector:
-    """Detects whether a set of freehand stroke points form a circle or rectangle
-    and redraws them as a clean geometric shape."""
 
     @staticmethod
-    def detect(points, tolerance=0.1):
-        """Return 'circle', 'rectangle', or None."""
-        if len(points) < 3:
+    def detect(points, min_size=30):
+        """
+        Return 'circle', 'rectangle', 'triangle', or None.
+
+        Parameters
+        ----------
+        points   : list of (x, y) tuples collected during the stroke
+        min_size : ignore shapes whose bounding box is smaller than this
+        """
+        if len(points) < 10:
             return None
 
-        distances = [
-            math.sqrt((points[i + 1][0] - points[i][0]) ** 2 + (points[i + 1][1] - points[i][1]) ** 2)
-            for i in range(len(points) - 1)
-        ]
+        pts = np.array(points, dtype=np.int32)
+        _, _, bw, bh = cv2.boundingRect(pts)
+        if bw < min_size and bh < min_size:
+            return None
 
-        # Circle: many points with similar step distances (closed stroke)
-        if len(points) >= 8:
-            avg = sum(distances) / len(distances)
-            if avg > 0:
-                variance = sum((d - avg) ** 2 for d in distances) / len(distances)
-                if variance < avg * tolerance:
-                    return "circle"
+        hull = cv2.convexHull(pts)
+        peri = cv2.arcLength(hull, closed=True)
+        if peri == 0:
+            return None
 
-        # Rectangle: exactly 4 corner points with roughly 90-degree angles
-        if len(points) == 4:
-            angles = []
-            for i in range(4):
-                p1, p2, p3 = points[i], points[(i + 1) % 4], points[(i + 2) % 4]
-                v1 = (p1[0] - p2[0], p1[1] - p2[1])
-                v2 = (p3[0] - p2[0], p3[1] - p2[1])
-                dot = v1[0] * v2[0] + v1[1] * v2[1]
-                mag1 = math.sqrt(v1[0] ** 2 + v1[1] ** 2)
-                mag2 = math.sqrt(v2[0] ** 2 + v2[1] ** 2)
-                if mag1 > 0 and mag2 > 0:
-                    cos_a = max(-1.0, min(1.0, dot / (mag1 * mag2)))
-                    angles.append(math.acos(cos_a))
-            if all(abs(a - math.pi / 2) < 0.3 for a in angles):
+        # ── Step 1: polygon test at tight epsilon ─────────────────────────
+        approx = cv2.approxPolyDP(hull, 0.04 * peri, closed=True)
+        n = len(approx)
+
+        if n == 3:
+            return "triangle"
+
+        if n == 4:
+            _, _, aw, ah = cv2.boundingRect(approx)
+            if aw > min_size and ah > min_size:
                 return "rectangle"
+
+        # ── Step 2: circle fallback (5+ polygon vertices) ─────────────────
+        # Check how closely all stroke points hug their min-enclosing circle.
+        if n >= 5:
+            (cx, cy), radius = cv2.minEnclosingCircle(pts)
+            if radius > min_size:
+                deviations = [
+                    abs(math.sqrt((p[0] - cx) ** 2 + (p[1] - cy) ** 2) - radius)
+                    for p in points
+                ]
+                avg_dev = sum(deviations) / len(deviations)
+                if avg_dev / radius < 0.25:
+                    return "circle"
 
         return None
 
+    # ─────────────────────────────────────────────────────────────────────
+
     @staticmethod
     def complete(shape_type, points, canvas, color, thickness):
-        """Draw the snapped shape onto *canvas*. Returns True on success."""
+        """Draw the clean snapped shape onto *canvas*. Returns True on success."""
+        pts = np.array(points, dtype=np.int32)
+
         if shape_type == "circle":
-            cx = sum(p[0] for p in points) // len(points)
-            cy = sum(p[1] for p in points) // len(points)
-            radius = int(
-                sum(math.sqrt((p[0] - cx) ** 2 + (p[1] - cy) ** 2) for p in points) / len(points)
-            )
-            cv2.circle(canvas, (cx, cy), radius, color, thickness)
+            (cx, cy), radius = cv2.minEnclosingCircle(pts)
+            cv2.circle(canvas,
+                       (int(cx), int(cy)), max(1, int(radius)),
+                       color, thickness)
             return True
 
         if shape_type == "rectangle":
-            xs = [p[0] for p in points]
-            ys = [p[1] for p in points]
-            cv2.rectangle(canvas, (min(xs), min(ys)), (max(xs), max(ys)), color, thickness)
+            x, y, w, h = cv2.boundingRect(pts)
+            cv2.rectangle(canvas, (x, y), (x + w, y + h), color, thickness)
+            return True
+
+        if shape_type == "triangle":
+            hull   = cv2.convexHull(pts)
+            peri   = cv2.arcLength(hull, closed=True)
+            approx = cv2.approxPolyDP(hull, 0.07 * peri, closed=True)
+            cv2.polylines(canvas, [approx], True, color, thickness)
             return True
 
         return False
