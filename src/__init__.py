@@ -6,6 +6,9 @@ from .ui_utils import (
     draw_cursor, draw_shape,
 )
 from .effects import spray_paint, neon_stroke, mirror_stroke, rainbow_color
+from .ui_renderer import (
+    render_header, render_right_panel, render_left_panel, render_status_bar,
+)
 
 try:
     from .voice_controller import VoiceController
