@@ -1,5 +1,9 @@
+# Desktop app (python main.py)
 opencv-python<4.9.0
 numpy<2.0.0
 mediapipe
 SpeechRecognition
-pyaudio 
+pyaudio
+
+# Browser app (python app.py)
+flask

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Painter — AI Hand Gesture Art</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── HEADER ──────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="brand">
+      <span class="brand-icon">✦</span>
+      <div class="brand-text">
+        <span class="brand-title">VIRTUAL PAINTER</span>
+        <span class="brand-sub">AI Hand Gesture Art</span>
+      </div>
+    </div>
+
+    <div class="palette-wrap">
+      <div class="palette" id="palette"></div>
+    </div>
+
+    <div class="header-meta">
+      <div class="badge fps-badge">
+        <i class="fa-solid fa-gauge-high"></i>
+        <span id="fps">--</span> fps
+      </div>
+      <div class="badge gesture-badge" id="gestureBadge">
+        <i class="fa-solid fa-hand"></i>
+        <span id="gestureText">No hand</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ────────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Left panel -->
+    <aside class="panel panel-left">
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-shapes"></i> Shapes</h3>
+        <div class="shape-grid" id="shapeGrid"></div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-sliders"></i> Size</h3>
+        <div class="size-row">
+          <span class="size-dot" id="sizeDot"></span>
+          <input type="range" id="sizeSlider" min="2" max="45" value="15" class="slider">
+          <span class="size-num" id="sizeNum">15</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-keyboard"></i> Shortcuts</h3>
+        <div class="shortcuts">
+          <div class="sc"><kbd>U</kbd><span>Undo</span></div>
+          <div class="sc"><kbd>R</kbd><span>Redo</span></div>
+          <div class="sc"><kbd>S</kbd><span>Save</span></div>
+          <div class="sc"><kbd>C</kbd><span>Clear</span></div>
+          <div class="sc"><kbd>[</kbd><kbd>]</kbd><span>Size</span></div>
+          <div class="sc"><kbd>B</kbd><span>BG</span></div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-hand-pointer"></i> Gestures</h3>
+        <div class="gestures">
+          <div class="gs"><span class="gs-icon">☝</span><span>Draw</span></div>
+          <div class="gs"><span class="gs-icon">✌</span><span>Select</span></div>
+          <div class="gs"><span class="gs-icon">🤟</span><span>AI Snap</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Canvas area -->
+    <div class="canvas-wrap">
+      <div class="canvas-area" id="canvasArea">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="landmarkCanvas"></canvas>
+        <canvas id="drawingCanvas"></canvas>
+        <div class="canvas-hud">
+          <div class="hud-pill" id="aiHint">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Raise 3 fingers to AI-snap shape
+          </div>
+        </div>
+      </div>
+      <div class="cam-status" id="camStatus">
+        <i class="fa-solid fa-spinner fa-spin"></i> Waiting for camera…
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <aside class="panel panel-right">
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-toolbox"></i> Tools</h3>
+        <div class="tool-list" id="toolList"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-bolt"></i> Actions</h3>
+        <div class="action-list" id="actionList"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="panel-section active-color-section">
+        <div class="active-color-ring" id="activeRing"></div>
+        <div class="active-color-info">
+          <span class="active-color-name" id="activeColorName">Magenta</span>
+          <span class="active-color-hex" id="activeColorHex">#ff00ff</span>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ── STATUS BAR ──────────────────────────────────────────────────── -->
+  <footer class="statusbar">
+    <span class="sb-tool" id="sbTool">
+      <i class="fa-solid fa-paintbrush"></i> Brush — size 15
+    </span>
+    <span class="sb-center" id="sbCenter"></span>
+    <span class="sb-voice" id="sbVoice">
+      <i class="fa-solid fa-microphone-slash"></i> Voice loading…
+    </span>
+  </footer>
+
+</div>
+
+<!-- MediaPipe CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
+<!-- App -->
+<script src="js/gestures.js"></script>
+<script src="js/drawing.js"></script>
+<script src="js/shapes.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
