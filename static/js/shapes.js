@@ -1,5 +1,5 @@
 /**
- * AI Shape Detector — mirrors the Python ShapeDetector logic.
+ * AI Shape Detector + confidence scorer.
  * Exports: detectShape(points), plus geometry helpers used by drawing.js.
  */
 
@@ -141,4 +141,94 @@ function detectShape(points, minSize = 30) {
   }
 
   return null;
+}
+
+/* ── Confidence scorer ───────────────────────────────────────────────── */
+/**
+ * Returns a 0–1 score for how well the points match the detected shape.
+ */
+function calculateConfidence(shape, points) {
+  if (!shape || points.length < 6) return 0;
+
+  if (shape === 'circle') {
+    const { cx, cy, r } = minEnclosingCircle(points);
+    if (r === 0) return 0;
+    const devs  = points.map(p => Math.abs(Math.hypot(p.x - cx, p.y - cy) - r));
+    const avg   = devs.reduce((s, d) => s + d, 0) / devs.length;
+    const maxDev = Math.max(...devs);
+    const score = 1 - (avg * 0.7 + maxDev * 0.3) / (r * 0.25);
+    return Math.max(0, Math.min(1, score));
+  }
+
+  if (shape === 'rectangle') {
+    const hull   = convexHull(points);
+    const peri   = hullPerimeter(hull);
+    if (!peri) return 0;
+    const approx = rdpSimplify(hull, 0.04 * peri);
+    const n      = approx.length;
+    // 4 corners is perfect; penalise deviation
+    const cornerScore = Math.max(0, 1 - Math.abs(n - 4) * 0.2);
+    // Also check bounding-box fill ratio (tighter = more rectangular)
+    const area  = hullArea(hull);
+    const xs    = approx.map(p => p.x), ys = approx.map(p => p.y);
+    const bbox  = (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+    const fill  = bbox > 0 ? Math.min(1, area / bbox) : 0;
+    return Math.max(0, Math.min(1, cornerScore * 0.5 + fill * 0.5));
+  }
+
+  if (shape === 'triangle') {
+    const hull   = convexHull(points);
+    const peri   = hullPerimeter(hull);
+    if (!peri) return 0;
+    const approx = rdpSimplify(hull, 0.04 * peri);
+    const n      = approx.length;
+    const score  = Math.max(0, 1 - Math.abs(n - 3) * 0.25);
+    return Math.min(0.98, score + 0.1);
+  }
+
+  return 0;
+}
+
+/* ── Live preview helper ─────────────────────────────────────────────── */
+/**
+ * Draws a translucent preview of the detected shape on a canvas 2D context.
+ * Used by the Shape Detect tool to give real-time feedback.
+ */
+function drawDetectionPreview(ctx, shape, points, color = '#22d3ee') {
+  if (!shape || !points.length) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = 2.5;
+  ctx.setLineDash([7, 5]);
+  ctx.shadowBlur  = 14;
+  ctx.shadowColor = color;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+
+  if (shape === 'circle') {
+    const { cx, cy, r } = minEnclosingCircle(points);
+    ctx.arc(cx, cy, Math.max(1, r), 0, 2 * Math.PI);
+
+  } else if (shape === 'rectangle') {
+    const xs = points.map(p => p.x), ys = points.map(p => p.y);
+    ctx.rect(Math.min(...xs), Math.min(...ys),
+             Math.max(...xs) - Math.min(...xs),
+             Math.max(...ys) - Math.min(...ys));
+
+  } else if (shape === 'triangle') {
+    const hull   = convexHull(points);
+    const peri   = hullPerimeter(hull);
+    const approx = rdpSimplify(hull, 0.07 * peri);
+    if (approx.length >= 3) {
+      ctx.moveTo(approx[0].x, approx[0].y);
+      for (let i = 1; i < approx.length; i++) ctx.lineTo(approx[i].x, approx[i].y);
+      ctx.closePath();
+    }
+  }
+
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.shadowBlur  = 0;
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }

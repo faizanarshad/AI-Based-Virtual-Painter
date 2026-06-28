@@ -124,6 +124,25 @@
         <canvas id="bgCanvas"></canvas>
         <canvas id="drawingCanvas"></canvas>
         <canvas id="landmarkCanvas"></canvas>
+        <!-- Shape Detection live panel -->
+        <div class="detect-panel" id="detectPanel">
+          <div class="dp-header">
+            <i class="fa-solid fa-vector-square"></i> SHAPE DETECTION
+          </div>
+          <div class="dp-shape">
+            <span class="dp-icon" id="detectShapeIcon">?</span>
+            <span class="dp-name" id="detectShapeName">—</span>
+          </div>
+          <div class="dp-conf-row">
+            <span class="dp-conf-label">Confidence</span>
+            <div class="dp-conf-bar">
+              <div class="dp-conf-fill" id="detectFill"></div>
+            </div>
+            <span class="dp-conf-pct" id="detectConf">—</span>
+          </div>
+          <div class="dp-tip" id="detectTip">Select Shape Detect tool to begin</div>
+        </div>
+
         <div class="canvas-hud">
           <div class="hud-pill" id="aiHint">
             <i class="fa-solid fa-wand-magic-sparkles"></i> Raise 3 fingers to AI-snap shape

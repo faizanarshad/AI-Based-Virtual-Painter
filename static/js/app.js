@@ -30,6 +30,7 @@ const TOOLS = [
   {id:'pixel',      label:'Pixel',       icon:'fa-border-all',       accent:'#94a3b8'},
   {id:'text',       label:'Text',        icon:'fa-font',             accent:'#f472b6'},
   {id:'eyedrop',    label:'Eyedrop',     icon:'fa-eye-dropper',      accent:'#818cf8'},
+  {id:'detect',     label:'Shape Detect', icon:'fa-vector-square',   accent:'#22d3ee'},
   {id:'eraser',     label:'Eraser',      icon:'fa-eraser',           accent:'#ef4444'},
   {id:'fill',       label:'Fill',        icon:'fa-fill-drip',        accent:'#3b82f6'},
 ];
@@ -74,6 +75,15 @@ const state = {
   fps: 0, fpsFrames: 0, fpsLast: performance.now(),
 };
 
+/* ── Shape detection state ───────────────────────────────────────────── */
+const ds = {
+  points:     [],      // stroke points accumulated during detection
+  detected:   null,    // current detected shape name
+  confidence: 0,       // 0–1
+  startSnap:  null,    // ImageData snapshot at stroke start (for clean erase)
+  committed:  false,   // true once snapped after stroke ends
+};
+
 /* ── DOM refs ────────────────────────────────────────────────────────── */
 const video          = document.getElementById('video');
 const landmarkCanvas = document.getElementById('landmarkCanvas');
@@ -87,7 +97,32 @@ const aiHint         = document.getElementById('aiHint');
 const textOverlay    = document.getElementById('textOverlay');
 const textInput      = document.getElementById('textInput');
 
-const painter = new Painter(drawingCanvas);
+const painter       = new Painter(drawingCanvas);
+const detectPanel   = document.getElementById('detectPanel');
+const detectShapeEl = document.getElementById('detectShapeName');
+const detectIconEl  = document.getElementById('detectShapeIcon');
+const detectConfEl  = document.getElementById('detectConf');
+const detectFillEl  = document.getElementById('detectFill');
+const detectTipEl   = document.getElementById('detectTip');
+
+const SHAPE_ICONS = { circle:'○', rectangle:'□', triangle:'△', null:'?' };
+
+function updateDetectPanel(shape, conf, tip) {
+  if (!detectPanel) return;
+  const isActive = state.tool === 'detect';
+  detectPanel.classList.toggle('visible', isActive);
+  if (!isActive) return;
+
+  const icon = SHAPE_ICONS[shape] ?? '?';
+  const pct  = Math.round(conf * 100);
+  const col  = conf > 0.8 ? '#22d3ee' : conf > 0.5 ? '#f59e0b' : '#64748b';
+
+  if (detectIconEl)  detectIconEl.textContent  = icon;
+  if (detectShapeEl) detectShapeEl.textContent  = shape ? shape.charAt(0).toUpperCase()+shape.slice(1) : '—';
+  if (detectConfEl)  detectConfEl.textContent   = shape ? pct + '%' : '—';
+  if (detectFillEl)  { detectFillEl.style.width = pct + '%'; detectFillEl.style.background = col; }
+  if (detectTipEl)   detectTipEl.textContent    = tip ?? '';
+}
 
 /* ── Build UI ────────────────────────────────────────────────────────── */
 function buildUI() {
@@ -245,6 +280,14 @@ function selectTool(id) {
   document.querySelectorAll('.tool-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.tool === id));
   document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+  // Reset detection state when leaving detect tool
+  if (id !== 'detect') {
+    ds.points = []; ds.detected = null; ds.confidence = 0;
+    ds.startSnap = null; ds.committed = false;
+    updateDetectPanel(null, 0, null);
+  } else {
+    updateDetectPanel(null, 0, 'Draw any shape with 1 finger…');
+  }
   updateStatus();
 }
 
@@ -480,6 +523,38 @@ function onResults(results) {
       resetDrawState(); return;
     }
 
+    // ── Shape Detect tool ──────────────────────────────────────────
+    if (state.tool === 'detect') {
+      if (!ds.startSnap) {
+        ds.startSnap  = painter.ctx.getImageData(0, 0, cw, ch);
+        ds.points     = [];
+        ds.detected   = null;
+        ds.confidence = 0;
+        ds.committed  = false;
+      }
+      ds.points.push({ x, y });
+
+      // Draw faint freehand stroke so user sees their hand
+      painter.ctx.globalAlpha = 0.35;
+      painter.apply('brush', state.prevX, state.prevY, x, y, state.color, state.size);
+      painter.ctx.globalAlpha = 1;
+
+      // Run detection every 6 new points
+      if (ds.points.length % 6 === 0 && ds.points.length >= 10) {
+        ds.detected   = detectShape(ds.points);
+        ds.confidence = calculateConfidence(ds.detected, ds.points);
+        updateDetectPanel(ds.detected, ds.confidence, 'Lift finger to snap →');
+      }
+
+      // Live preview of detected shape on landmark canvas
+      if (ds.detected) {
+        drawDetectionPreview(lCtx, ds.detected, ds.points, '#22d3ee');
+      }
+
+      state.prevX = x; state.prevY = y;
+      drawCursor(x, y, 'detect'); return;
+    }
+
     if (state.tool === 'shape' && state.selectedShape && state.shapeStart) {
       if (state.shapeSnap) painter.ctx.putImageData(state.shapeSnap, 0, 0);
       else state.shapeSnap = painter.ctx.getImageData(0, 0, cw, ch);
@@ -498,6 +573,25 @@ function onResults(results) {
   }
 
   // ── Finger lifted ─────────────────────────────────────────────────
+  // Commit shape detection snap
+  if (state.tool === 'detect' && state.drawing && ds.points.length >= 10 && !ds.committed) {
+    ds.committed = true;
+    const final = detectShape(ds.points);
+    const conf  = calculateConfidence(final, ds.points);
+    if (final && ds.startSnap) {
+      // Erase faint freehand stroke
+      painter.ctx.putImageData(ds.startSnap, 0, 0);
+      // Draw clean snapped shape
+      painter.saveState();
+      painter.completeShape(final, ds.points, state.color, state.size);
+      showHint(`✦ Snapped → ${final}  (${Math.round(conf*100)}%)`, 2200);
+      updateDetectPanel(final, conf, '✓ Snapped!');
+    } else {
+      updateDetectPanel(null, 0, 'No shape detected — try again');
+    }
+    ds.startSnap = null; ds.points = []; ds.detected = null; ds.confidence = 0;
+  }
+
   if (state.drawing && state.tool==='shape' && state.selectedShape && state.shapeStart)
     painter.saveState();
   resetDrawState();
@@ -536,6 +630,11 @@ function drawCursor(x, y, tool) {
   } else if (tool==='eyedrop') {
     ctx.strokeStyle='rgba(129,140,248,.9)';
     ctx.beginPath(); ctx.arc(x,y,6,0,2*Math.PI); ctx.stroke();
+  } else if (tool==='detect') {
+    ctx.strokeStyle='#22d3ee'; ctx.shadowBlur=8; ctx.shadowColor='#22d3ee';
+    ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.arc(x,y,r,0,2*Math.PI); ctx.stroke();
+    ctx.setLineDash([]); ctx.shadowBlur=0;
   } else {
     ctx.strokeStyle='#fff'; ctx.beginPath(); ctx.arc(x,y,r,0,2*Math.PI); ctx.stroke();
     ctx.strokeStyle=state.color; ctx.beginPath(); ctx.arc(x,y,r,0,2*Math.PI); ctx.stroke();
