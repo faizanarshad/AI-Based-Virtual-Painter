@@ -1,198 +1,213 @@
-# Advanced Virtual Painter - AI-Powered Hand Gesture Drawing Application
+# ✦ Virtual Painter — AI Hand Gesture Drawing
 
-A sophisticated Python application that allows you to draw on screen using hand gestures captured through your webcam. Features AI-powered shape detection, voice commands, and advanced drawing tools. Uses MediaPipe for hand tracking, OpenCV for computer vision, and SpeechRecognition for voice control.
+<p align="center">
+  <img src="assets/screenshots/app_demo.png" alt="Virtual Painter in action" width="100%">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/MediaPipe-JS%20%7C%20Python-orange?logo=google&logoColor=white" />
+  <img src="https://img.shields.io/badge/Browser-Ready-7c3aed?logo=googlechrome&logoColor=white" />
+  <img src="https://img.shields.io/badge/License-MIT-green" />
+</p>
+
+---
+
+## The Story
+
+It started with a simple question: *what if you could paint in the air?*
+
+Virtual Painter began as a weekend experiment — a Python script using a webcam and OpenCV to track a single index finger and draw coloured lines on screen. No mouse, no touchscreen, no stylus. Just your hand, a camera, and a canvas that responded to your every movement.
+
+As the project grew, so did its ambitions. We added more tools — spray paint that scattered dots like a real can, a neon glow effect that made lines pulse with electric colour, a mirror mode that reflected every stroke symmetrically. We brought in voice commands so you could shout "red!" to change colour or "undo!" to step back. We added an AI shape detector that watches how you draw and snaps freehand circles and rectangles into clean geometry.
+
+Then came the biggest leap: moving from an OpenCV desktop window to a full **browser-based experience**. The browser version uses MediaPipe's JavaScript library to run hand tracking entirely client-side — no server round-trips, no lag. The UI was rebuilt from scratch with a deep-space dark theme, glassmorphism panels, animated colour swatches, Font Awesome icons, and smooth CSS transitions.
+
+Today Virtual Painter is a creative tool that lives at the intersection of computer vision, human-computer interaction, and digital art. It shows that your hands — the oldest creative tools humanity has ever had — can also be the most futuristic ones.
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <strong>Full Application</strong><br>
+      <img src="assets/screenshots/app_main.png" alt="Main UI" width="100%">
+    </td>
+    <td width="50%">
+      <strong>Drawing with Neon &amp; Shape Tools</strong><br>
+      <img src="assets/screenshots/app_demo.png" alt="Demo drawing" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <strong>Shape Detection Panel</strong><br>
+      <img src="assets/screenshots/shape_detect_panel.png" alt="Shape detection" width="100%">
+    </td>
+    <td width="50%">
+      <strong>Canvas Drawing Area</strong><br>
+      <img src="assets/screenshots/canvas_area.png" alt="Canvas" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <strong>Left Panel — Shapes &amp; Controls</strong><br>
+      <img src="assets/screenshots/panel_left.png" alt="Left panel" width="100%">
+    </td>
+    <td width="50%">
+      <strong>Right Panel — Tools &amp; Actions</strong><br>
+      <img src="assets/screenshots/panel_right.png" alt="Right panel" width="100%">
+    </td>
+  </tr>
+</table>
+
+---
 
 ## Features
 
-### **Core Features**
-- **Hand Gesture Recognition**: Track your hand movements in real-time
-- **Virtual Drawing**: Draw on screen using your index finger
-- **Color Selection**: Choose from 7 different colors using hand gestures
-- **Tool Selection**: Switch between multiple drawing tools
-- **Save Functionality**: Save your artwork as PNG files with timestamps
-- **Clear Canvas**: Clear the drawing area with a gesture
+### 🎨 Drawing Tools (14 total)
+| Tool | Description |
+|------|-------------|
+| **Brush** | Smooth freehand strokes with adjustable size |
+| **Pen** | Thin 1.5px calligraphy line |
+| **Spray** | Density-falloff dot scatter (like a real spray can) |
+| **Watercolor** | 7-pass jittered translucent wash effect |
+| **Glitter** | 4-pointed sparkle burst around the cursor |
+| **Ink** | Speed-sensitive width — fast strokes go thin |
+| **Rainbow** | Hue auto-cycles through the colour spectrum |
+| **Neon** | Additive multi-pass Gaussian glow effect |
+| **Mirror** | Simultaneous horizontal-mirror strokes |
+| **Pixel** | Snapped square dots for pixel art |
+| **Text** | Type text directly onto the canvas |
+| **Eyedropper** | Sample any colour from the canvas |
+| **Shape Detect** | AI-powered freehand → clean shape snapping |
+| **Eraser** | Erase with adjustable size |
+| **Fill** | Flood-fill any enclosed region |
 
-### **Advanced Features**
-- **AI Shape Detection**: Automatically detect and complete circles and rectangles
-- **Voice Commands**: Control the application using voice commands
-- **Multiple Drawing Tools**: Brush, Eraser, Shape, Text, and Fill tools
-- **Brush Size Control**: 5 different brush sizes (5-35 pixels)
-- **Eraser Size Control**: 5 different eraser sizes (20-100 pixels)
-- **Undo/Redo System**: 20-level undo/redo history
-- **Flood Fill Tool**: Fill enclosed areas with color
-- **Shape Drawing**: Draw shapes and let AI complete them
-- **Real-time Voice Feedback**: Voice commands with immediate response
+### 🔷 Shape Library (10 shapes)
+Circle · Rectangle · Triangle · Line · Star · Heart · Diamond · Pentagon · Hexagon · Arrow
+
+### 🤖 AI Shape Detection
+Draw any freehand shape and the app detects it in real time:
+- **Live preview** — dashed cyan overlay shows the predicted clean shape as you draw
+- **Confidence bar** — colour-coded score (green >80%, amber >50%, grey <50%)
+- **Auto-snap** — when you lift your finger, the freehand stroke is replaced with the perfect version
+
+### ✦ Creative Controls
+- **Opacity slider** — 5%–100%, applies to every tool
+- **Symmetry** — Off / Horizontal mirror / 4-way quad with guide lines
+- **Background modes** — Camera feed / Black / White / Grid (press `B`)
+- **Grid overlay** — reference grid toggle (press `G`)
+- **Native colour picker** — click the active colour ring
+- **Undo / Redo** — 35-level history
+
+### 🖐 Gesture Controls
+| Gesture | Action |
+|---------|--------|
+| ☝ Index finger up | Draw / use active tool |
+| ✌ Index + middle up | Selection mode (hover over palette / buttons) |
+| 🤟 Index + middle + ring up | AI shape snap |
+
+---
+
+## Quick Start
+
+### Browser App *(recommended)*
+```bash
+pip install flask
+python app.py
+# Opens http://localhost:8080 automatically
+# Allow camera access when prompted
+```
+
+### Desktop App *(OpenCV window)*
+```bash
+pip install -r requirements.txt
+python main.py          # normal mode
+python main.py --demo   # no camera needed
+```
+
+---
 
 ## Installation
 
-### Prerequisites
-- Python 3.7 or higher
-- Webcam
-- macOS, Windows, or Linux
-
-### Install Dependencies
-
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/faizanarshad/AI-Based-Virtual-Painter.git
+cd AI-Based-Virtual-Painter
+
+# Browser version only needs Flask
+pip install flask
+
+# Desktop version needs full stack
+pip install -r requirements.txt   # OpenCV, MediaPipe, SpeechRecognition …
 ```
 
-**Or install manually:**
-```bash
-pip install opencv-python numpy mediapipe SpeechRecognition pyaudio
-```
+**macOS note:** Camera access must be granted to your browser (Settings → Privacy → Camera).
 
-**Note**: If you encounter compatibility issues, use these specific versions:
-```bash
-pip install "opencv-python<4.9.0" "numpy<2.0.0" mediapipe SpeechRecognition pyaudio
-```
+---
 
-**System Dependencies (macOS):**
-```bash
-brew install portaudio
-```
+## Keyboard Shortcuts
 
-## Usage
+| Key | Action |
+|-----|--------|
+| `U` | Undo |
+| `R` | Redo |
+| `S` | Save PNG |
+| `C` | Clear canvas |
+| `B` | Cycle background |
+| `G` | Toggle grid overlay |
+| `[` / `]` | Decrease / increase brush size |
+| `Esc` | Close text input |
 
-### Running the Application
+---
 
-1. **Basic Application (with camera)**:
-   ```bash
-   python onscreen.py
-   ```
-
-2. **Enhanced Application (with additional features)**:
-   ```bash
-   python onscreen_enhanced.py
-   ```
-
-3. **Advanced Application (with AI and voice commands)**:
-   ```bash
-   python onscreen_advanced.py
-   ```
-
-4. **Demo Mode (without camera)**:
-   ```bash
-   python onscreen_demo.py
-   ```
-
-### Camera Access Setup
-
-#### macOS
-1. Go to **System Preferences** > **Security & Privacy** > **Privacy** > **Camera**
-2. Find your terminal application (Terminal, iTerm, etc.) and enable camera access
-3. Restart your terminal application
-4. Run the application again
-
-#### Windows
-- Camera access is usually granted automatically
-- If prompted, allow camera access when the application requests it
-
-#### Linux
-- Ensure your user has access to video devices
-- You might need to run: `sudo usermod -a -G video $USER`
-
-### How to Use
-
-#### **Basic Controls**
-1. **Drawing**: Point your index finger to draw on the screen
-2. **Selection Mode**: Point both index and middle fingers to enter selection mode
-3. **Color Selection**: In selection mode, point at the color swatches in the header
-4. **Tool Selection**: Use the tool buttons in the header
-5. **Clear Canvas**: Click the Clear button to erase everything
-6. **Save Artwork**: Click the Save button to save your drawing
-7. **Quit**: Press 'q' to exit the application
-
-#### **Advanced Controls (Advanced Version)**
-1. **AI Shape Detection**: 
-   - Use Shape tool to draw rough shapes
-   - Point 3 fingers up to let AI complete the shape
-   - Supports circles and rectangles
-
-2. **Voice Commands**:
-   - "Brush" - Switch to brush tool
-   - "Eraser" - Switch to eraser tool
-   - "Shape" - Switch to shape tool
-   - "Fill" - Switch to fill tool
-   - "Red", "Green", "Blue", "Yellow", "Purple", "White" - Change colors
-   - "Clear" - Clear canvas
-   - "Save" - Save artwork
-   - "Undo" - Undo last action
-   - "Redo" - Redo last action
-
-3. **Advanced Tools**:
-   - **Brush Tool**: Freehand drawing with adjustable size
-   - **Eraser Tool**: Erase with adjustable size
-   - **Shape Tool**: Draw shapes for AI completion
-   - **Fill Tool**: Fill enclosed areas with color
-   - **Size Control**: Click size buttons to change brush/eraser size
-
-### Gesture Controls
-
-#### **Basic Gestures**
-- **Index finger up**: Draw mode
-- **Index + Middle finger up**: Selection mode
-- **All fingers down**: No action
-
-#### **Advanced Gestures (Advanced Version)**
-- **Index finger up**: Draw mode
-- **Index + Middle finger up**: Selection mode
-- **Index + Middle + Ring finger up**: Complete shape (AI mode)
-- **All fingers down**: No action
-
-## Troubleshooting
-
-### Camera Not Working
-- Ensure camera permissions are enabled
-- Check if another application is using the camera
-- Try restarting your terminal/IDE
-- On macOS, make sure to grant camera access to your terminal application
-
-### Import Errors
-If you get import errors related to NumPy or TensorFlow:
-```bash
-pip uninstall numpy opencv-python mediapipe
-pip install "numpy<2.0.0" "opencv-python<4.9.0" mediapipe
-```
-
-### Performance Issues
-- Ensure good lighting for hand detection
-- Keep your hand clearly visible to the camera
-- Close other applications using the camera
-
-## File Structure
+## Project Structure
 
 ```
-onscreen_board/
-├── onscreen.py              # Basic application with camera
-├── onscreen_enhanced.py     # Enhanced version with additional features
-├── onscreen_advanced.py     # Advanced version with AI and voice commands
-├── onscreen_demo.py         # Demo version without camera
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
+AI-Based-Virtual-Painter/
+├── app.py                  ← Browser server (Flask, port 8080)
+├── main.py                 ← Desktop app entry point
+├── static/
+│   ├── index.html          ← Single-page UI
+│   ├── css/style.css       ← Dark glassmorphism theme
+│   └── js/
+│       ├── app.js          ← Main app logic + MediaPipe wiring
+│       ├── drawing.js      ← All drawing tools (Painter class)
+│       ├── gestures.js     ← Finger detection + gesture classification
+│       └── shapes.js       ← AI shape detector + confidence scorer
+├── src/                    ← Python modules (desktop app)
+│   ├── hand_detector.py
+│   ├── shape_detector.py
+│   ├── voice_controller.py
+│   ├── effects.py
+│   └── ui_renderer.py
+├── output/                 ← Saved paintings land here
+├── assets/screenshots/     ← README screenshots
+└── requirements.txt
 ```
 
-## Technical Details
+---
 
-- **Hand Detection**: MediaPipe Hands model
-- **Computer Vision**: OpenCV
-- **Hand Tracking**: Real-time landmark detection
-- **Drawing**: Canvas-based drawing with OpenCV
-- **Voice Recognition**: SpeechRecognition with Google Speech API
-- **AI Shape Detection**: Custom algorithm for circle and rectangle detection
-- **Flood Fill**: Recursive algorithm for area filling
-- **Undo/Redo**: Stack-based history management
+## Tech Stack
 
-## Requirements
+| Layer | Technology |
+|-------|-----------|
+| Hand tracking | [MediaPipe Hands](https://mediapipe.dev/) (JS + Python) |
+| Computer vision | OpenCV (desktop), HTML5 Canvas (browser) |
+| AI shape detection | Convex hull + RDP simplification + min-enclosing circle |
+| Browser server | Flask |
+| UI | HTML5 · CSS3 (glassmorphism) · Font Awesome 6 |
+| Voice control | Google Speech API via SpeechRecognition (desktop) |
 
-- Python 3.7+
-- OpenCV
-- NumPy
-- MediaPipe
-- SpeechRecognition
-- PyAudio
-- Webcam
-- Microphone (for voice commands)
+---
 
 ## License
 
-This project is open source and available under the MIT License.
+MIT — free to use, modify, and share.
+
+---
+
+<p align="center">
+  Made with ✦ by <strong>Faizan Arshad</strong>
+</p>
