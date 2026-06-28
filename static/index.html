@@ -10,7 +10,7 @@
 <body>
 <div class="app">
 
-  <!-- ── HEADER ──────────────────────────────────────────────────────── -->
+  <!-- ── HEADER ──────────────────────────────────────────────────── -->
   <header class="header">
     <div class="brand">
       <span class="brand-icon">✦</span>
@@ -36,22 +36,60 @@
     </div>
   </header>
 
-  <!-- ── MAIN ────────────────────────────────────────────────────────── -->
+  <!-- ── MAIN ────────────────────────────────────────────────────── -->
   <main class="main">
 
     <!-- Left panel -->
     <aside class="panel panel-left">
+
       <div class="panel-section">
         <h3 class="section-title"><i class="fa-solid fa-shapes"></i> Shapes</h3>
         <div class="shape-grid" id="shapeGrid"></div>
       </div>
 
       <div class="panel-section">
-        <h3 class="section-title"><i class="fa-solid fa-sliders"></i> Size</h3>
+        <h3 class="section-title"><i class="fa-solid fa-sliders"></i> Brush Size</h3>
         <div class="size-row">
           <span class="size-dot" id="sizeDot"></span>
-          <input type="range" id="sizeSlider" min="2" max="45" value="15" class="slider">
-          <span class="size-num" id="sizeNum">15</span>
+          <input type="range" id="sizeSlider" min="2" max="44" value="14" class="slider">
+          <span class="size-num" id="sizeNum">14</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-circle-half-stroke"></i> Opacity</h3>
+        <div class="size-row">
+          <input type="range" id="opacitySlider" min="0.05" max="1" step="0.05" value="1" class="slider slider-opacity">
+          <span class="size-num" id="opacityNum">100%</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-clone"></i> Symmetry</h3>
+        <div class="toggle-row">
+          <button class="toggle-btn active" data-sym="0">Off</button>
+          <button class="toggle-btn" data-sym="2">⟺ H</button>
+          <button class="toggle-btn" data-sym="4">⊞ 4×</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-display"></i> Canvas</h3>
+        <div class="toggle-row wrap">
+          <button class="toggle-btn wide" id="bgBtn">🎨 BG: camera</button>
+          <button class="toggle-btn wide" id="gridBtn">⊞ Grid</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title"><i class="fa-solid fa-palette"></i> Pick Color</h3>
+        <div class="color-picker-row">
+          <div class="active-color-ring" id="activeRing" title="Click to open color picker"></div>
+          <div class="active-color-info">
+            <span class="active-color-name" id="activeColorName">Red</span>
+            <span class="active-color-hex"  id="activeColorHex">#ef4444</span>
+          </div>
+          <input type="color" id="colorPickerInput" class="hidden-picker" value="#ef4444">
         </div>
       </div>
 
@@ -62,8 +100,9 @@
           <div class="sc"><kbd>R</kbd><span>Redo</span></div>
           <div class="sc"><kbd>S</kbd><span>Save</span></div>
           <div class="sc"><kbd>C</kbd><span>Clear</span></div>
+          <div class="sc"><kbd>B</kbd><span>BG cycle</span></div>
+          <div class="sc"><kbd>G</kbd><span>Grid</span></div>
           <div class="sc"><kbd>[</kbd><kbd>]</kbd><span>Size</span></div>
-          <div class="sc"><kbd>B</kbd><span>BG</span></div>
         </div>
       </div>
 
@@ -75,14 +114,16 @@
           <div class="gs"><span class="gs-icon">🤟</span><span>AI Snap</span></div>
         </div>
       </div>
+
     </aside>
 
     <!-- Canvas area -->
     <div class="canvas-wrap">
       <div class="canvas-area" id="canvasArea">
         <video id="video" autoplay muted playsinline></video>
-        <canvas id="landmarkCanvas"></canvas>
+        <canvas id="bgCanvas"></canvas>
         <canvas id="drawingCanvas"></canvas>
+        <canvas id="landmarkCanvas"></canvas>
         <div class="canvas-hud">
           <div class="hud-pill" id="aiHint">
             <i class="fa-solid fa-wand-magic-sparkles"></i> Raise 3 fingers to AI-snap shape
@@ -100,37 +141,34 @@
         <h3 class="section-title"><i class="fa-solid fa-toolbox"></i> Tools</h3>
         <div class="tool-list" id="toolList"></div>
       </div>
-
       <div class="divider"></div>
-
       <div class="panel-section">
         <h3 class="section-title"><i class="fa-solid fa-bolt"></i> Actions</h3>
         <div class="action-list" id="actionList"></div>
       </div>
-
-      <div class="divider"></div>
-
-      <div class="panel-section active-color-section">
-        <div class="active-color-ring" id="activeRing"></div>
-        <div class="active-color-info">
-          <span class="active-color-name" id="activeColorName">Magenta</span>
-          <span class="active-color-hex" id="activeColorHex">#ff00ff</span>
-        </div>
-      </div>
     </aside>
+
   </main>
 
-  <!-- ── STATUS BAR ──────────────────────────────────────────────────── -->
+  <!-- ── STATUS BAR ──────────────────────────────────────────────── -->
   <footer class="statusbar">
     <span class="sb-tool" id="sbTool">
-      <i class="fa-solid fa-paintbrush"></i> Brush — size 15
+      <i class="fa-solid fa-paintbrush"></i> Brush — size 14
     </span>
     <span class="sb-center" id="sbCenter"></span>
     <span class="sb-voice" id="sbVoice">
-      <i class="fa-solid fa-microphone-slash"></i> Voice loading…
+      <i class="fa-solid fa-microphone-slash"></i> checking…
     </span>
   </footer>
 
+</div>
+
+<!-- Text input overlay (floats above everything) -->
+<div id="textOverlay" class="text-overlay" style="display:none">
+  <div class="text-box">
+    <input id="textInput" type="text" placeholder="Type text → Enter to place…" autocomplete="off">
+    <span class="text-hint">Enter to place  ·  Esc to cancel</span>
+  </div>
 </div>
 
 <!-- MediaPipe CDN -->
